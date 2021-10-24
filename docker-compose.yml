@@ -1,0 +1,21 @@
+version: "3"
+services:
+  web:
+    image: dk-reg.10ninox.com/ds-dga/spice:latest
+    restart: unless-stopped
+    environment:
+      - POSTGRES_URI=${POSTGRES_URI}
+      - PORT=${PORT}
+    networks:
+      - proxy_default
+    expose:
+      - ${PORT}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20k"
+        max-file: "1"
+
+networks:
+  proxy_default:
+    external: true
