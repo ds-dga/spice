@@ -7,11 +7,104 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 )
 
-type ReqData struct {
+func (app *WebApp) UptimeQueryByURL(w http.ResponseWriter, r *http.Request) {
+	/* Get only
+
+	Query: url	text
+	*/
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: "not acceptable",
+		})
+		return
+	}
+	rec, err := app.getUptimeRecordByURL(url)
+	if err != nil {
+		errMsg := err.Error()
+		if ind := strings.Index(errMsg, "no rows"); ind != -1 {
+			MessageJSONResponse(w, http.StatusNotFound, MsgResponse{
+				Message: "not found",
+			})
+			return
+		}
+		log.Printf("[err1] %s", err.Error())
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	jMessage, _ := json.Marshal(rec)
+	w.Write(jMessage)
+}
+
+type ReqUptimeCreateData struct {
+	Url       string `json:"url"`
+	Name      string `json:"name"`
+	Frequency string `json:"frequency"`
+	Group     string `json:"group"`
+}
+
+func (app *WebApp) HandleUptimeCreate(w http.ResponseWriter, r *http.Request) {
+	/* POST only
+
+	body:
+
+	* url 			text
+	* name			text
+	* frequency		text
+	* group			text
+	*/
+
+	if r.Body == nil {
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: "No request body",
+		})
+		return
+	}
+	var body ReqUptimeCreateData
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+	if body.Url == "" {
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: "empty url",
+		})
+		return
+	}
+	_, err = url.Parse(body.Url)
+	if err != nil {
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: "invalid url",
+		})
+		return
+	}
+	rec, err := app.createUptimeRecord(body.Url, body.Name, body.Frequency, body.Group)
+	if err != nil {
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	jMessage, _ := json.Marshal(rec)
+	w.Write(jMessage)
+}
+
+type ReqStatsUpdateData struct {
 	ID           uuid.UUID  `json:"id"`
 	Url          string     `json:"url"`
 	StatusCode   int64      `json:"status_code"`
@@ -21,7 +114,7 @@ type ReqData struct {
 	Coords       [2]float64 `json:"from_coords"`
 }
 
-func (app *WebApp) HandleUptimeUpdate(w http.ResponseWriter, r *http.Request) {
+func (app *WebApp) HandleUptimeStatsUpdate(w http.ResponseWriter, r *http.Request) {
 	/* POST only
 
 	body:
@@ -39,7 +132,7 @@ func (app *WebApp) HandleUptimeUpdate(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	var body ReqData
+	var body ReqStatsUpdateData
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
@@ -81,11 +174,11 @@ func (app *WebApp) HandleUptimeUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 type UptimeRecord struct {
-	ID        uuid.UUID
-	Name      string
-	Url       string
-	Group     string
-	Frequency string
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Url       string    `json:"url"`
+	Group     string    `json:"group"`
+	Frequency string    `json:"frequency"`
 }
 
 func (app *WebApp) GetOrCreateUptimeRecord(ID uuid.UUID, Url string) (*UptimeRecord, error) {
@@ -149,6 +242,24 @@ func (app *WebApp) getUptimeRecordByURL(URL string) (*UptimeRecord, error) {
 	return &rec, nil
 }
 
+// createUptimeRecord is for simple uptime creation w/ minimal information
+func (app *WebApp) createUptimeRecord(URL string, name string, freq string, group string) (*UptimeRecord, error) {
+	_, err := url.Parse(URL)
+	if err != nil {
+		return nil, err
+	}
+	var id uuid.UUID
+	err = app.pdb.QueryRow(`
+		INSERT INTO api("name", "url", "frequency", "group")
+		VALUES($1, $2, $3, $4) RETURNING id
+	`, name, URL, freq, group).Scan(&id)
+	if err != nil {
+		return nil, err
+	}
+	return app.getUptimeRecordByID(id)
+}
+
+// addUptimeRecord is for simple uptime creation w/ minimal information
 func (app *WebApp) addUptimeRecord(URL string) (*UptimeRecord, error) {
 	u, err := url.Parse(URL)
 	if err != nil {
@@ -165,7 +276,7 @@ func (app *WebApp) addUptimeRecord(URL string) (*UptimeRecord, error) {
 	return app.getUptimeRecordByID(id)
 }
 
-func (app *WebApp) addUptimeStat(record *UptimeRecord, body ReqData) error {
+func (app *WebApp) addUptimeStat(record *UptimeRecord, body ReqStatsUpdateData) error {
 	var id int64
 	var err error
 	if body.Coords != [2]float64{0, 0} {

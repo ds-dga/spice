@@ -21,7 +21,10 @@ func (app *WebApp) Serve() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/hook/uptime", app.HandleUptimeUpdate)
+	r.Get("/uptime", app.UptimeQueryByURL)
+	r.Post("/uptime", app.HandleUptimeCreate)
+
+	r.Post("/hook/uptime", app.HandleUptimeStatsUpdate)
 
 	// For actually use, you must support HTTPS by using `ListenAndServeTLS`, reverse proxy or etc.
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +34,7 @@ func (app *WebApp) Serve() {
 	if port == "" {
 		port = "3300"
 	}
-	fmt.Printf("everyday passport is listening on port %v\n", port)
+	fmt.Printf("spice is listening on port %v\n", port)
 
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)
