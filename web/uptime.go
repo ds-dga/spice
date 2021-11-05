@@ -47,10 +47,11 @@ func (app *WebApp) UptimeQueryByURL(w http.ResponseWriter, r *http.Request) {
 }
 
 type ReqUptimeCreateData struct {
-	Url       string `json:"url"`
-	Name      string `json:"name"`
-	Frequency string `json:"frequency"`
-	Group     string `json:"group"`
+	Url       string           `json:"url"`
+	Name      string           `json:"name"`
+	Frequency string           `json:"frequency"`
+	Group     string           `json:"group"`
+	Extras    *json.RawMessage `json:"extras"`
 }
 
 func (app *WebApp) HandleUptimeCreate(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +63,7 @@ func (app *WebApp) HandleUptimeCreate(w http.ResponseWriter, r *http.Request) {
 	* name			text
 	* frequency		text
 	* group			text
+	* extras		json
 	*/
 
 	if r.Body == nil {
@@ -91,7 +93,15 @@ func (app *WebApp) HandleUptimeCreate(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	rec, err := app.createUptimeRecord(body.Url, body.Name, body.Frequency, body.Group)
+	b, err := json.Marshal(&body.Extras)
+	if err != nil {
+		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
+			Message: "invalid extras",
+		})
+		return
+	}
+
+	rec, err := app.createUptimeRecord(body.Url, body.Name, body.Frequency, body.Group, string(b))
 	if err != nil {
 		MessageJSONResponse(w, http.StatusNotAcceptable, MsgResponse{
 			Message: err.Error(),
@@ -243,16 +253,16 @@ func (app *WebApp) getUptimeRecordByURL(URL string) (*UptimeRecord, error) {
 }
 
 // createUptimeRecord is for simple uptime creation w/ minimal information
-func (app *WebApp) createUptimeRecord(URL string, name string, freq string, group string) (*UptimeRecord, error) {
+func (app *WebApp) createUptimeRecord(URL string, name string, freq string, group string, extras string) (*UptimeRecord, error) {
 	_, err := url.Parse(URL)
 	if err != nil {
 		return nil, err
 	}
 	var id uuid.UUID
 	err = app.pdb.QueryRow(`
-		INSERT INTO api("name", "url", "frequency", "group")
-		VALUES($1, $2, $3, $4) RETURNING id
-	`, name, URL, freq, group).Scan(&id)
+		INSERT INTO api("name", "url", "frequency", "group", "extras")
+		VALUES($1, $2, $3, $4, $5) RETURNING id
+	`, name, URL, freq, group, extras).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
