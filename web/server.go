@@ -26,6 +26,17 @@ func (app *WebApp) Serve() {
 
 	r.Post("/hook/uptime", app.HandleUptimeStatsUpdate)
 
+	r.Post("/signup", app.SignUp)
+	r.Post("/login", app.Login)
+	r.Post("/forget-password-request", app.ForgetPassword)
+	r.Post("/magic-link", app.MagicLink)
+	r.Post("/email-confirmation", app.Confirmation)
+
+	r.Route("/upload", func(r chi.Router) {
+		r.Post("/", app.NewUploadHandler)
+		// r.Delete("/{mediaID}", app.PurgeMediaHandler)
+	})
+
 	// For actually use, you must support HTTPS by using `ListenAndServeTLS`, reverse proxy or etc.
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))

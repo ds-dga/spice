@@ -6,6 +6,9 @@ services:
     environment:
       - POSTGRES_URI=${POSTGRES_URI}
       - PORT=${PORT}
+      - BASE_DIR=/data
+    volumes:
+      - ./upload:/data
     networks:
       - proxy_default
     expose:
