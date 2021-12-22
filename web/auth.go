@@ -103,7 +103,17 @@ func (app *WebApp) JWTResponse(user *User, w http.ResponseWriter) {
 	token, err := app.GenerateJWTToken(user, "token")
 	if err != nil {
 		resp := msgReponse{
-			Result:  "failed",
+			Result:  "failed: JWT generator",
+			Message: err.Error(),
+		}
+		authJSONResponse(w, http.StatusBadRequest, resp)
+		return
+	}
+
+	err = app.SetUserLastLogin(user.ID)
+	if err != nil {
+		resp := msgReponse{
+			Result:  "failed: User updater",
 			Message: err.Error(),
 		}
 		authJSONResponse(w, http.StatusBadRequest, resp)
@@ -171,14 +181,14 @@ func (app *WebApp) SignUp(w http.ResponseWriter, req *http.Request) {
 	}
 	authJSONResponse(w, http.StatusOK, resp)
 
-	// TODO: send mail
-	// unixTime := time.Now().Unix()
-	// message := fmt.Sprintf("Please confirm your email by click at the following link"+
-	// 	"\n\n"+
-	// 	"https://ds.10z.dev/registration-confirmation?nbt=%d&em=%s&key=%s"+
-	// 	"\n\n"+
-	// 	"Thank you", unixTime, user.UserName, user.SeedGenerator(unixTime))
-	// SendMail(user.UserName, "Registration confirmation", message)
+	// send mail
+	unixTime := time.Now().Unix()
+	message := fmt.Sprintf("Please confirm your email by click at the following link"+
+		"\n\n"+
+		"https://ds.10z.dev/email-confirmation?nbt=%d&em=%s&key=%s"+
+		"\n\n"+
+		"Thank you", unixTime, user.UserName, user.SeedGenerator(unixTime))
+	SendMail(user.UserName, "Registration confirmation", message)
 }
 
 func (u User) SeedGenerator(tm int64) string {
@@ -220,23 +230,23 @@ func (app *WebApp) ForgetPassword(w http.ResponseWriter, req *http.Request) {
 		authJSONResponse(w, http.StatusBadRequest, resp)
 		return
 	}
-	// TODO: Sending mail
-	// unixTime := time.Now().Unix()
-	// token, err := app.GenerateJWTToken(user, "magic")
-	// if err != nil {
-	// 	resp := msgReponse{
-	// 		Result:  "failed",
-	// 		Message: err.Error(),
-	// 	}
-	// 	authJSONResponse(w, http.StatusBadRequest, resp)
-	// 	return
-	// }
-	// message := fmt.Sprintf("Please click at the magic link below to signin to JobDCharity automatically."+
-	// 	"\n\n"+
-	// 	"https://ds.10z.dev/magic-signin?nbt=%d&key=%s"+
-	// 	"\n\n"+
-	// 	"Thank you", unixTime, token)
-	// SendMail(user.UserName, "Forget password?", message)
+	// Sending mail
+	unixTime := time.Now().Unix()
+	token, err := app.GenerateJWTToken(user, "magic")
+	if err != nil {
+		resp := msgReponse{
+			Result:  "failed",
+			Message: err.Error(),
+		}
+		authJSONResponse(w, http.StatusBadRequest, resp)
+		return
+	}
+	message := fmt.Sprintf("Please click at the magic link below to signin to the system automatically."+
+		"\n\n"+
+		"https://ds.10z.dev/magic-link?nbt=%d&key=%s"+
+		"\n\n"+
+		"Thank you", unixTime, token)
+	SendMail(user.UserName, "Forget password?", message)
 
 	mt := map[string]string{}
 	mt["result"] = "success"
@@ -256,15 +266,12 @@ type MagicBody struct {
 // Confirmation sets active to the account
 func (app *WebApp) Confirmation(w http.ResponseWriter, req *http.Request) {
 	var body MagicBody
-	err := json.NewDecoder(req.Body).Decode(&body)
-	if err != nil {
-		resp := msgReponse{
-			Result:  "failed",
-			Message: "JSON decoded failed",
-		}
-		authJSONResponse(w, http.StatusBadRequest, resp)
-		return
-	}
+	// magicBody comes in GET query
+	q := req.URL.Query()
+	body.Nbt = q.Get("nbt")
+	body.Email = q.Get("em")
+	body.Key = q.Get("key")
+
 	NotBefore, err := strconv.Atoi(body.Nbt)
 	if err != nil {
 		resp := msgReponse{
@@ -309,8 +316,6 @@ func (app *WebApp) Confirmation(w http.ResponseWriter, req *http.Request) {
 		authJSONResponse(w, http.StatusBadRequest, resp)
 		return
 	}
-	// TODO: set active to this user
-	// TODO: check if this works? untested
 	err = app.SetUserActiveByID(user.ID)
 	if err != nil {
 		resp := msgReponse{
@@ -331,15 +336,12 @@ func (app *WebApp) Confirmation(w http.ResponseWriter, req *http.Request) {
 // MagicLink handles special very short-life OTP like
 func (app *WebApp) MagicLink(w http.ResponseWriter, req *http.Request) {
 	var body MagicBody
-	err := json.NewDecoder(req.Body).Decode(&body)
-	if err != nil {
-		resp := msgReponse{
-			Result:  "failed",
-			Message: "JSON decoded failed",
-		}
-		authJSONResponse(w, http.StatusBadRequest, resp)
-		return
-	}
+	// magicBody comes in GET query
+	q := req.URL.Query()
+	body.Nbt = q.Get("nbt")
+	body.Email = q.Get("em")
+	body.Key = q.Get("key")
+
 	NotBefore, err := strconv.Atoi(body.Nbt)
 	if err != nil {
 		resp := msgReponse{

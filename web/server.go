@@ -29,8 +29,8 @@ func (app *WebApp) Serve() {
 	r.Post("/signup", app.SignUp)
 	r.Post("/login", app.Login)
 	r.Post("/forget-password-request", app.ForgetPassword)
-	r.Post("/magic-link", app.MagicLink)
-	r.Post("/email-confirmation", app.Confirmation)
+	r.Get("/magic-link", app.MagicLink)
+	r.Get("/email-confirmation", app.Confirmation)
 
 	r.Route("/upload", func(r chi.Router) {
 		r.Post("/", app.NewUploadHandler)

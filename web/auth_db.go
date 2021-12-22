@@ -72,6 +72,18 @@ func (app *WebApp) SetUserActiveByID(ID uuid.UUID) error {
 	return nil
 }
 
+func (app *WebApp) SetUserLastLogin(ID uuid.UUID) error {
+	var result bool
+	err := app.pdb.QueryRow(`
+		UPDATE auth_user SET last_login = NOW()
+		WHERE id = $1
+		RETURNING is_active`, ID).Scan(&result)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // FindUserByID returns user
 func (app *WebApp) FindUserByID(ID uuid.UUID) (*User, error) {
 	u := User{}

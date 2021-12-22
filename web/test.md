@@ -56,3 +56,20 @@ curl --header "Content-Type: application/json" --request POST --data '{"url":"ht
 curl --header "Content-Type: application/json" --request POST --data '{"url":"https://test.10ninox.com","name":"10ninox-test","group":"sipp11","frequency":"never"}' http://10.1.1.50:3300/uptime
 
 
+---------------------------
+
+# Auth
+
+Register
+
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"email":"sipp11@duck.com","password":"whatever.is.secure","first_name":"Sipp","last_name":"Ninox"}' \
+  http://127.0.0.1:3300/signup
+
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"email":"sipp11@duck.com","password":"whatever.is.secure"}' \
+  http://127.0.0.1:3300/login

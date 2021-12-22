@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"fmt"
@@ -18,10 +18,21 @@ func SendMail(email, subject, body string) (bool, error) {
 		"\r\n" + body + "\r\n"
 	// Sender data.
 	from := "no-reply@ds.10z.dev"
+	host := os.Getenv("SMTP_HOST")
+	if host == "" {
+		host = "outgoing.mail.go.th"
+	}
+	port := os.Getenv("SMTP_PORT")
+	if port == "" {
+		// regularly 465, but mail.go.th doesn't do regular, huh?
+		port = "587"
+	}
+	user := os.Getenv("SMTP_USER")
 	password := os.Getenv("SMTP_PASSWORD")
 	// Authentication.
-	auth := smtp.PlainAuth("", "apikey", password, "smtp.sendgrid.net")
-	err := smtp.SendMail("smtp.sendgrid.net:587", auth, from, to, []byte(message))
+	smtpAddr := fmt.Sprintf("%s:%s", host, port)
+	auth := smtp.PlainAuth("", user, password, host)
+	err := smtp.SendMail(smtpAddr, auth, from, to, []byte(message))
 	if err != nil {
 		fmt.Println(err)
 		return false, err
