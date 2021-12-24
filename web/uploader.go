@@ -1,8 +1,10 @@
 package web
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -124,11 +126,19 @@ func (app *WebApp) NewUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// no need to allocate if it's bigger than 32 MB
-	r.Body = http.MaxBytesReader(w, r.Body, 32<<20+512)
-
-	err = r.ParseMultipartForm(32 << 20) // 32Mb
+	// r.Body = http.MaxBytesReader(w, r.Body, 1<<23)
+	// maxReadSize := 1 << 23 // 1GB // << means number of Zero fill left shift
+	part, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<23))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	r.Body = ioutil.NopCloser(io.MultiReader(bytes.NewReader(part), r.Body))
+
+	err = r.ParseMultipartForm(1 << 23)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	url := r.PostForm["url"]
 	if r.MultipartForm == nil && len(url) == 0 {
@@ -168,6 +178,8 @@ func (app *WebApp) NewUploadHandler(w http.ResponseWriter, r *http.Request) {
 	var buffer []byte
 	var extension string
 	var source string
+	var ogFilename string
+	var ogFileSize int64
 	// Get a file handle, store the file, and so on
 	if hasPhoto {
 		file, fileHeader, err := r.FormFile("photo")
@@ -177,6 +189,8 @@ func (app *WebApp) NewUploadHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
+		ogFilename = fileHeader.Filename
+		ogFileSize = fileHeader.Size
 		defer file.Close()
 		buffer = make([]byte, fileHeader.Size)
 		file.Read(buffer)
@@ -211,6 +225,8 @@ func (app *WebApp) NewUploadHandler(w http.ResponseWriter, r *http.Request) {
 		ObjectUUID: objUUID,
 		ObjectID:   int64(objID),
 		UserID:     user.ID,
+		Name:       ogFilename,
+		Size:       ogFileSize,
 	}
 	if len(source) > 0 {
 		record.Extras.Source = source

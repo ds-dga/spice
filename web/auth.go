@@ -39,15 +39,15 @@ func authJSONResponse(w http.ResponseWriter, httpCode int, resp msgReponse) {
 // HeaderAuthenticate verifies if auth is ok
 func (app *WebApp) HeaderAuthenticate(req *http.Request) (*User, error) {
 	/* Required headers:
-	* winter-falcon-client: client-as-string
-	* winter-falcon-social-app: facebook, google, email
-	* winter-falcon-uid: userid-string
+	* x-everyday-client: client-as-string
+	* x-everyday-social-app: facebook, google, email
+	* x-everyday-uid: userid-string
 	 */
 	headers := req.Header.Clone()
-	client := headers.Get("winter-falcon-client")
-	socialApp := headers.Get("winter-falcon-social-app")
-	uid := headers.Get("winter-falcon-uid")
-	jwtToken := headers.Get("winter-falcon-jwt")
+	client := headers.Get("x-everyday-client")
+	socialApp := headers.Get("x-everyday-social-app")
+	uid := headers.Get("x-everyday-uid")
+	jwtToken := headers.Get("x-everyday-jwt")
 
 	if uid == "anonymous" {
 		return &User{
@@ -63,10 +63,7 @@ func (app *WebApp) HeaderAuthenticate(req *http.Request) (*User, error) {
 	}
 
 	if socialApp == "spice" {
-		if len(jwtToken) != 0 {
-			return app.VerifySpiceID(client, uid)
-		}
-		return nil, errors.New("bad request")
+		return app.VerifySpiceID(client, uid)
 	}
 
 	if len(socialApp) == 0 && len(uid) == 0 {

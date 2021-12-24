@@ -35,6 +35,8 @@ type Media struct {
 	ObjectID   int64
 	UserID     uuid.UUID
 	Extras     Extras
+	Name       string
+	Size       int64
 }
 
 // CreateUser
