@@ -2,7 +2,6 @@ package web
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -14,18 +13,10 @@ func (app *WebApp) NewMedia(record Media) (*uuid.UUID, error) {
 	var err error
 	extras, _ := json.Marshal(record.Extras)
 
-	if record.Point != [2]float64{0, 0} {
-		point := fmt.Sprintf("POINT(%.8f %.8f)", record.Point[0], record.Point[1])
-		err = app.pdb.QueryRow(`
-		INSERT INTO media("user_id", "object_type", "object_id", "object_uuid", "path", "extras", "point")
-		VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id
-		`, record.UserID, record.ObjectType, record.ObjectID, record.ObjectUUID, record.Path, extras, point).Scan(&result)
-	} else {
-		err = app.pdb.QueryRow(`
-			INSERT INTO media("user_id", "object_type", "object_id", "object_uuid", "path", "extras")
-			VALUES($1, $2, $3, $4, $5, $6) RETURNING id
-			`, record.UserID, record.ObjectType, record.ObjectID, record.ObjectUUID, record.Path, extras).Scan(&result)
-	}
+	err = app.pdb.QueryRow(`
+		INSERT INTO media("uploaded_by", "object_type", "object_id", "object_uuid", "path", "extras")
+		VALUES($1, $2, $3, $4, $5, $6) RETURNING id
+		`, record.UserID, record.ObjectType, record.ObjectID, record.ObjectUUID, record.Path, extras).Scan(&result)
 	if err != nil {
 		log.Printf("[save2psql-create] %v", err)
 		return nil, err

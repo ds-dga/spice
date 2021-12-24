@@ -62,6 +62,13 @@ func (app *WebApp) HeaderAuthenticate(req *http.Request) (*User, error) {
 		return nil, errors.New("bad request")
 	}
 
+	if socialApp == "spice" {
+		if len(jwtToken) != 0 {
+			return app.VerifySpiceID(client, uid)
+		}
+		return nil, errors.New("bad request")
+	}
+
 	if len(socialApp) == 0 && len(uid) == 0 {
 		return nil, errors.New("bad request")
 	}

@@ -34,7 +34,6 @@ type Media struct {
 	ObjectUUID uuid.UUID
 	ObjectID   int64
 	UserID     uuid.UUID
-	Point      [2]float64
 	Extras     Extras
 }
 
@@ -146,7 +145,7 @@ func (app *WebApp) FindUserIfExists(email string) (*User, error) {
 func (app *WebApp) VerifyAuthToken(client, jwtToken string) (*User, error) {
 	user, tokenKind, err := app.ParseJWTToken(jwtToken)
 	if err != nil {
-		fmt.Printf("[VerifyDCToken] %v \n", err)
+		fmt.Printf("[VerifyToken] %v \n", err)
 		return nil, err
 	}
 	// only tokenKind == "token" is valid here
@@ -154,6 +153,20 @@ func (app *WebApp) VerifyAuthToken(client, jwtToken string) (*User, error) {
 		return nil, errors.New("invalid token")
 	}
 	return user, nil
+}
+
+func (app *WebApp) VerifySpiceID(client, userID string) (*User, error) {
+	result := User{
+		Client: client,
+	}
+	err := app.pdb.QueryRow(`SELECT u.id, u.username, u.first_name, u.last_name
+	FROM auth_user u
+	WHERE u.id = $1`, userID).Scan(&result.ID, &result.UserName, &result.FirstName, &result.LastName)
+	if err != nil {
+		// no user found
+		return nil, errors.New("no spice user found")
+	}
+	return &result, nil
 }
 
 func (app *WebApp) VerifySocialAuthToken(client, socialApp, socialID string) (*User, error) {
@@ -166,7 +179,7 @@ func (app *WebApp) VerifySocialAuthToken(client, socialApp, socialID string) (*U
 	WHERE acc.provider = $1 AND acc.uid = $2`, socialApp, socialID).Scan(&result.ID, &result.UserName, &result.FirstName, &result.LastName)
 	if err != nil {
 		// no user found
-		return nil, errors.New("No social user found")
+		return nil, errors.New("no social user found")
 	}
 	return &result, nil
 }

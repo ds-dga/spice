@@ -110,12 +110,10 @@ func (app *WebApp) NewUploadHandler(w http.ResponseWriter, r *http.Request) {
 	https://github.com/golang/go/blob/go1.15.2/src/net/http/request.go#L1277
 	body:
 	* userID
-	* objectID
-	* objectType
+	* objectID			{optional}
+	* objectType		{optional}
 	* photo				<File> first priority
 	* url				<string> either this or photo (lower priority)
-	* longitude			{optional}
-	* latitude			{optional}
 	*/
 	// Find user record
 	user, err := app.HeaderAuthenticate(r)
@@ -151,41 +149,22 @@ func (app *WebApp) NewUploadHandler(w http.ResponseWriter, r *http.Request) {
 	var objectType []string
 
 	if objectID = r.PostForm["objectID"]; len(objectID) == 0 {
-		mediaJSONResponse(w, http.StatusBadRequest, mediaReponse{
-			Message: "Missing argument: objectID",
-		})
-		return
+		objectID = []string{"0"}
 	}
+
 	var objID int
 	var objUUID uuid.UUID
 	objUUID, err = uuid.Parse(objectID[0])
 	if err != nil {
 		objID, err = strconv.Atoi(objectID[0])
 		if err != nil {
-			mediaJSONResponse(w, http.StatusBadRequest, mediaReponse{
-				Message: "Missing argument: objectID (not uuid nor id <int>)",
-			})
-			return
+			objID = 0
 		}
 	}
 	if objectType = r.PostForm["objectType"]; len(objectType) == 0 {
-		mediaJSONResponse(w, http.StatusBadRequest, mediaReponse{
-			Message: "Missing argument: objectType",
-		})
-		return
+		objectType = []string{""}
 	}
 
-	pnt := [2]float64{0, 0}
-	if lon := r.PostForm["longitude"]; len(lon) != 0 {
-		pnt[0], err = strconv.ParseFloat(lon[0], 64)
-		if err != nil {
-			pnt[0] = 0
-		}
-		pnt[1], err = strconv.ParseFloat(r.PostForm["latitude"][0], 64)
-		if err != nil {
-			pnt[1] = 0
-		}
-	}
 	var buffer []byte
 	var extension string
 	var source string
@@ -232,7 +211,6 @@ func (app *WebApp) NewUploadHandler(w http.ResponseWriter, r *http.Request) {
 		ObjectUUID: objUUID,
 		ObjectID:   int64(objID),
 		UserID:     user.ID,
-		Point:      pnt,
 	}
 	if len(source) > 0 {
 		record.Extras.Source = source
