@@ -49,7 +49,7 @@ func (app *WebApp) HeaderAuthenticate(req *http.Request) (*User, error) {
 	uid := headers.Get("x-everyday-uid")
 	jwtToken := headers.Get("x-everyday-jwt")
 
-	if uid == "anonymous" {
+	if uid == "anonymous" || (socialApp == "null" && uid == "null") || socialApp == "" && uid == "" {
 		return &User{
 			Roles: []string{"anonymous"},
 		}, nil
@@ -169,7 +169,7 @@ func (app *WebApp) SignUp(w http.ResponseWriter, req *http.Request) {
 		}
 		authJSONResponse(w, http.StatusBadRequest, resp)
 	}
-	user, err := app.CreateUser(body.Email, string(hashedPassword), body.FirstName, body.LastName)
+	user, err := app.CreateUser(body.Email, string(hashedPassword), body.FirstName, body.LastName, "")
 	if err != nil {
 		resp := msgReponse{
 			Result:  "failed",

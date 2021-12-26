@@ -40,7 +40,7 @@ type Media struct {
 }
 
 // CreateUser
-func (app *WebApp) CreateUser(email, password, firstName, lastName string) (*User, error) {
+func (app *WebApp) CreateUser(email, password, firstName, lastName, profileURL string) (*User, error) {
 	u := User{
 		UserName:  email,
 		FirstName: firstName,
@@ -48,10 +48,10 @@ func (app *WebApp) CreateUser(email, password, firstName, lastName string) (*Use
 	}
 	// 1. create user -- capture id
 	err := app.pdb.QueryRow(`
-		INSERT INTO auth_user("username", "email", "first_name", "last_name", "password")
-		VALUES($1, $2, $3, $4, $5)
+		INSERT INTO auth_user("username", "email", "first_name", "last_name", "password", "profile_url")
+		VALUES($1, $2, $3, $4, $5, $6)
 		RETURNING id
-		`, email, email, firstName, lastName, password).Scan(&u.ID)
+		`, email, email, firstName, lastName, password, profileURL).Scan(&u.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "unique constraint") {
 			return nil, errors.New("email already registered")
@@ -167,21 +167,6 @@ func (app *WebApp) VerifySpiceID(client, userID string) (*User, error) {
 	if err != nil {
 		// no user found
 		return nil, errors.New("no spice user found")
-	}
-	return &result, nil
-}
-
-func (app *WebApp) VerifySocialAuthToken(client, socialApp, socialID string) (*User, error) {
-	result := User{
-		Client: client,
-	}
-	err := app.pdb.QueryRow(`SELECT u.id, u.username, u.first_name, u.last_name
-	FROM social_account acc
-	LEFT JOIN auth_user u ON acc.user_id = u.id
-	WHERE acc.provider = $1 AND acc.uid = $2`, socialApp, socialID).Scan(&result.ID, &result.UserName, &result.FirstName, &result.LastName)
-	if err != nil {
-		// no user found
-		return nil, errors.New("no social user found")
 	}
 	return &result, nil
 }
