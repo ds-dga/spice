@@ -101,7 +101,9 @@ func (app *WebApp) SetUserLastLogin(ID uuid.UUID) error {
 
 // FindUserByID returns user
 func (app *WebApp) FindUserByID(ID uuid.UUID) (*User, error) {
-	u := User{}
+	u := User{
+		Roles: []string{"user"}, // no role at the moment -- "user" as default
+	}
 	err := app.pdb.QueryRow(`SELECT
 		id, username, first_name, last_name, is_staff, is_active
 	FROM auth_user
@@ -117,7 +119,9 @@ func (app *WebApp) FindUserByID(ID uuid.UUID) (*User, error) {
 
 // FindUser
 func (app *WebApp) FindUser(email, password string) (*User, error) {
-	u := User{}
+	u := User{
+		Roles: []string{"user"}, // no role at the moment -- "user" as default
+	}
 	var hashed string
 	err := app.pdb.QueryRow(`SELECT
 		id, username, first_name, last_name, password, is_staff, is_active
@@ -142,7 +146,9 @@ func (app *WebApp) FindUser(email, password string) (*User, error) {
 
 // FindUserIfExists to check its existance for further processes such as forget password
 func (app *WebApp) FindUserIfExists(email string) (*User, error) {
-	u := User{}
+	u := User{
+		Roles: []string{"user"}, // no role at the moment -- "user" as default
+	}
 	err := app.pdb.QueryRow(`SELECT
 		id, username, first_name, last_name, is_staff, is_active
 	FROM auth_user
@@ -174,6 +180,7 @@ func (app *WebApp) VerifyAuthToken(client, jwtToken string) (*User, error) {
 func (app *WebApp) VerifySpiceID(client, userID string) (*User, error) {
 	result := User{
 		Client: client,
+		Roles:  []string{"user"}, // no role at the moment -- "user" as default
 	}
 	err := app.pdb.QueryRow(`SELECT u.id, u.username, u.first_name, u.last_name
 	FROM auth_user u

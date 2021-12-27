@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // Response return message
@@ -39,10 +40,14 @@ func (app *WebApp) HasuraHook(w http.ResponseWriter, req *http.Request) {
 
 	log.Printf("[hook-200] user=%v", user)
 	log.Printf("[hook-200] req=%v", req)
+	roles := []string{"user"}
+	if len(user.Roles) > 0 {
+		roles = user.Roles
+	}
 	msg := Response{
 		UserID:       user.ID.String(),
-		Role:         "user",
-		AllowedRoles: "user",
+		Role:         roles[0],
+		AllowedRoles: strings.Join(roles, ","),
 		CacheControl: "max-age=600",
 	}
 	jsonResponse(w, 200, msg)
