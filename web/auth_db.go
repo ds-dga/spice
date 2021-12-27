@@ -61,6 +61,20 @@ func (app *WebApp) CreateUser(email, password, firstName, lastName, profileURL s
 	return &u, nil
 }
 
+// UpdatePassword
+func (app *WebApp) UpdatePassword(user *User, newPassword string) error {
+	var returningID uuid.UUID
+	err := app.pdb.QueryRow(`
+		UPDATE auth_user SET password = $2
+		WHERE id = $1
+		RETURNING id
+		`, user.ID, newPassword).Scan(&returningID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *WebApp) SetUserActiveByID(ID uuid.UUID) error {
 	var result bool
 	err := app.pdb.QueryRow(`

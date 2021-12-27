@@ -65,11 +65,16 @@ Register
 
 curl --header "Content-Type: application/json" \
   --request POST \
-  --data '{"email":"sipp11@duck.com","password":"whatever.is.secure","first_name":"Sipp","last_name":"Ninox"}' \
-  http://127.0.0.1:3300/signup
+  --data '{"email":"sipp11@example.com","password":"whatever.is.secure","first_name":"Monthon","last_name":"MT"}' \
+  https://ds.10z.dev/signup
 
 
 curl --header "Content-Type: application/json" \
   --request POST \
-  --data '{"email":"sipp11@duck.com","password":"whatever.is.secure"}' \
+  --data '{"email":"sipp11@example.com","password":"whatever.is.secure"}' \
   http://127.0.0.1:3300/login
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"email":"sipp11@example.com","password":"whatever.is.secure","password":"whatever.is.secure2"}' \
+  http://127.0.0.1:3300/password-change

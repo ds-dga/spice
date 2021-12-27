@@ -261,6 +261,58 @@ func (app *WebApp) ForgetPassword(w http.ResponseWriter, req *http.Request) {
 	w.Write(msg)
 }
 
+type changePasswordBody struct {
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	NewPassword string `json:"newpassword"`
+}
+
+// ChangePassword handles password change
+func (app *WebApp) ChangePassword(w http.ResponseWriter, req *http.Request) {
+	var body changePasswordBody
+	err := json.NewDecoder(req.Body).Decode(&body)
+	if err != nil {
+		resp := msgReponse{
+			Result:  "failed",
+			Message: "JSON decoded failed",
+		}
+		authJSONResponse(w, http.StatusBadRequest, resp)
+		return
+	}
+
+	user, err := app.FindUser(body.Email, body.Password)
+	if err != nil {
+		resp := msgReponse{
+			Result:  "failed",
+			Message: err.Error(),
+		}
+		authJSONResponse(w, http.StatusBadRequest, resp)
+		return
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		resp := msgReponse{
+			Result:  "failed",
+			Message: err.Error(),
+		}
+		authJSONResponse(w, http.StatusBadRequest, resp)
+	}
+	err = app.UpdatePassword(user, string(hashedPassword))
+	if err != nil {
+		resp := msgReponse{
+			Result:  "failed",
+			Message: err.Error(),
+		}
+		authJSONResponse(w, http.StatusBadRequest, resp)
+	}
+
+	resp := msgReponse{
+		Result:  "success",
+		Message: "Password updated",
+	}
+	authJSONResponse(w, http.StatusOK, resp)
+}
+
 type MagicBody struct {
 	Nbt   string
 	Email string

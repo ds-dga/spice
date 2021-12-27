@@ -30,6 +30,7 @@ func (app *WebApp) Serve() {
 	r.Post("/social-connect", app.SocialConnect)
 	r.Post("/signup", app.SignUp)
 	r.Post("/login", app.Login)
+	r.Post("/password-change", app.ChangePassword)
 	r.Post("/forget-password-request", app.ForgetPassword)
 	r.Get("/magic-link", app.MagicLink)
 	r.Get("/email-confirmation", app.Confirmation)
