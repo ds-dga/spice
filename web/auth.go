@@ -40,7 +40,7 @@ func authJSONResponse(w http.ResponseWriter, httpCode int, resp msgReponse) {
 func (app *WebApp) HeaderAuthenticate(req *http.Request) (*User, error) {
 	/* Required headers:
 	* x-everyday-client: client-as-string
-	* x-everyday-social-app: facebook, google, email
+	* x-everyday-social-app: facebook, google, email, survey (which uid wil be session-id)
 	* x-everyday-uid: userid-string
 	 */
 	headers := req.Header.Clone()
@@ -53,6 +53,13 @@ func (app *WebApp) HeaderAuthenticate(req *http.Request) (*User, error) {
 		return &User{
 			Roles: []string{"anonymous"},
 		}, nil
+	}
+
+	if socialApp == "survey" {
+		if len(uid) != 0 {
+			return app.VerifySurveyUserID(socialApp, uid)
+		}
+		return nil, errors.New("bad request")
 	}
 
 	if socialApp == "email" {

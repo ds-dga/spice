@@ -12,6 +12,7 @@ import (
 // WebApp struct
 type WebApp struct {
 	pdb      *sql.DB
+	surveyDB *sql.DB
 	basePath string
 	secret   []byte
 }
@@ -19,10 +20,18 @@ type WebApp struct {
 // NewWebApp to initializes WebApp
 func NewApp() (*WebApp, error) {
 	postgresURI := os.Getenv("POSTGRES_URI")
+	surveyPostgresURI := os.Getenv("SURVEY_POSTGRES_URI")
 	if postgresURI == "" {
 		postgresURI = "postgres://sipp11:banshee10@localhost/hailing?sslmode=verify-full"
 	}
+	if surveyPostgresURI == "" {
+		surveyPostgresURI = "postgres://sipp11:banshee10@localhost/survey?sslmode=verify-full"
+	}
 	psqlDB, err := sql.Open("postgres", postgresURI)
+	if err != nil {
+		return nil, err
+	}
+	surveyDB, err := sql.Open("postgres", surveyPostgresURI)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +52,7 @@ func NewApp() (*WebApp, error) {
 	log.Printf("[web] db=%v", postgresURI)
 	return &WebApp{
 		pdb:      psqlDB,
+		surveyDB: surveyDB,
 		basePath: basePath,
 		secret:   []byte(secretKey),
 	}, nil
