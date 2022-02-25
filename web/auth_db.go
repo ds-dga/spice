@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -177,6 +178,7 @@ func (app *WebApp) VerifyAuthToken(client, jwtToken string) (*User, error) {
 	return user, nil
 }
 
+// VerifySpiceID to veried if spice's userID exists
 func (app *WebApp) VerifySpiceID(client, userID string) (*User, error) {
 	result := User{
 		Client: client,
@@ -188,6 +190,32 @@ func (app *WebApp) VerifySpiceID(client, userID string) (*User, error) {
 	if err != nil {
 		// no user found
 		return nil, errors.New("no spice user found")
+	}
+	return &result, nil
+}
+
+// VerifySurveyUserID to veried if survey userID exists and has active session
+func (app *WebApp) VerifySurveyUserID(client, userID string) (*User, error) {
+	result := User{
+		Client: client,
+		Roles:  []string{"user"}, // no role at the moment -- "user" as default
+	}
+	var expires int64
+	err := app.surveyDB.QueryRow(`SELECT u.id, u.name, u.email, ss.expires
+	FROM users u
+	INNER JOIN sessions ss ON u.id = ss."userId"
+	WHERE u.id = $1
+	ORDER BY ss.expires DESC
+	LIMIT 1`, userID).Scan(&result.ID, &result.UserName, &result.FirstName, &expires)
+
+	expirationTime := time.Unix(expires/1000, 0)
+	if time.Since(expirationTime) > 0 {
+		// if expires already pass, then return expired session error
+		return nil, errors.New("expired session")
+	}
+	if err != nil {
+		// no user found
+		return nil, errors.New("no survey user found")
 	}
 	return &result, nil
 }
