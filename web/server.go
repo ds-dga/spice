@@ -35,6 +35,12 @@ func (app *WebApp) Serve() {
 	r.Get("/magic-link", app.MagicLink)
 	r.Get("/email-confirmation", app.Confirmation)
 
+	// all query related should be in here regardless of projects
+	r.Route("/q", func(r chi.Router) {
+		// projet: Contact (dga-contacts)
+		r.Get("/public-sector-contact", app.PublicSectorContact)
+	})
+
 	r.Route("/upload", func(r chi.Router) {
 		r.Post("/", app.NewUploadHandler)
 		// r.Delete("/{mediaID}", app.PurgeMediaHandler)

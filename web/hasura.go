@@ -38,8 +38,8 @@ func (app *WebApp) HasuraHook(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("[hook-200] user=%v", user)
-	log.Printf("[hook-200] req=%v", req)
+	// log.Printf("[hook-200] user=%v", user)
+	// log.Printf("[hook-200] req=%v", req)
 	roles := []string{"user"}
 	if len(user.Roles) > 0 {
 		roles = user.Roles

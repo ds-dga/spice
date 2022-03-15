@@ -11,27 +11,36 @@ import (
 
 // WebApp struct
 type WebApp struct {
-	pdb      *sql.DB
-	surveyDB *sql.DB
-	basePath string
-	secret   []byte
+	pdb       *sql.DB
+	surveyDB  *sql.DB
+	contactDB *sql.DB
+	basePath  string
+	secret    []byte
 }
 
 // NewWebApp to initializes WebApp
 func NewApp() (*WebApp, error) {
 	postgresURI := os.Getenv("POSTGRES_URI")
 	surveyPostgresURI := os.Getenv("SURVEY_POSTGRES_URI")
+	contactPostgresURI := os.Getenv("CONTACT_POSTGRES_URI")
 	if postgresURI == "" {
 		postgresURI = "postgres://sipp11:banshee10@localhost/hailing?sslmode=verify-full"
 	}
 	if surveyPostgresURI == "" {
 		surveyPostgresURI = "postgres://sipp11:banshee10@localhost/survey?sslmode=verify-full"
 	}
+	if contactPostgresURI == "" {
+		contactPostgresURI = "postgres://sipp11:banshee10@localhost/contact?sslmode=verify-full"
+	}
 	psqlDB, err := sql.Open("postgres", postgresURI)
 	if err != nil {
 		return nil, err
 	}
 	surveyDB, err := sql.Open("postgres", surveyPostgresURI)
+	if err != nil {
+		return nil, err
+	}
+	contactDB, err := sql.Open("postgres", contactPostgresURI)
 	if err != nil {
 		return nil, err
 	}
@@ -50,11 +59,14 @@ func NewApp() (*WebApp, error) {
 	}
 
 	log.Printf("[web] db=%v", postgresURI)
+	log.Printf("[web] surveyDB=%v", surveyDB)
+	log.Printf("[web] contactDB=%v", contactDB)
 	return &WebApp{
-		pdb:      psqlDB,
-		surveyDB: surveyDB,
-		basePath: basePath,
-		secret:   []byte(secretKey),
+		pdb:       psqlDB,
+		surveyDB:  surveyDB,
+		contactDB: contactDB,
+		basePath:  basePath,
+		secret:    []byte(secretKey),
 	}, nil
 }
 

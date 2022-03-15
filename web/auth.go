@@ -167,7 +167,7 @@ func (app *WebApp) SignUp(w http.ResponseWriter, req *http.Request) {
 		authJSONResponse(w, http.StatusBadRequest, resp)
 		return
 	}
-	fmt.Println("signup body: ", body)
+	// fmt.Println("signup body: ", body)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
 	if err != nil {
 		resp := msgReponse{
