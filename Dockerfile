@@ -4,6 +4,7 @@ FROM golang:alpine AS builder
 #     --repository http://dl-3.alpinelinux.org/alpine/edge/community \
 #     --repository http://dl-3.alpinelinux.org/alpine/edge/main \
 #     build-base vips-dev
+RUN apk add git
 RUN mkdir /app
 COPY . /app
 WORKDIR /app
