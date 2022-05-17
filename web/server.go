@@ -24,7 +24,10 @@ func (app *WebApp) Serve() {
 	r.Get("/uptime", app.UptimeQueryByURL)
 	r.Post("/uptime", app.HandleUptimeCreate)
 
-	r.Post("/hook/uptime", app.HandleUptimeStatsUpdate)
+	r.Route("/hook", func(r chi.Router) {
+		r.Post("/machine-readable", app.HandleMachineReadableUpdate)
+		r.Post("/uptime", app.HandleUptimeStatsUpdate)
+	})
 
 	r.Get("/hasura-hook", app.HasuraHook)
 	r.Post("/social-connect", app.SocialConnect)
